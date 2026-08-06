@@ -9,8 +9,8 @@ def start():
     from SYSTEM.SERVICES import navigator
     
     stat = SM.State()
-    #stat_mang = SM.StateManager(SM.LockScreen())
-    stat_mang = SM.StateManager(SM.Calculator())
+    stat_mang = SM.StateManager(SM.LockScreen())
+    #stat_mang = SM.StateManager(SM.Calculator())
     nav = navigator.nav(stat_mang,SM)
     
     while True:
