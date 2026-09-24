@@ -1,0 +1,154 @@
+from SYSTEM.INPUT.buttons import Tc_input
+from SYSTEM.DISPLAY import display, renderer, txt_ui as TXU
+#from SYSTEM.DISPLAY import renderer
+class nav:
+    def __init__(self,stat_mang,SM):
+        self.Stm = stat_mang
+        self.obj = 0
+        self.info_obj = self.Stm.state.ui
+        self.event_map = SM.EVENT_MAP
+        self.state_map = SM.STATE_MAP
+        self.nav_map = []
+        self.tc = Tc_input()
+        global Dinamc_Init
+        Dinamc_Init = {"ST_MAP" : self.state_map,
+                       "EV_MAP" : self.event_map,}
+        
+        #self.pos_x = int(self.info_obj[self.obj]["layout"]["pos"][0] +(
+        #                self.info_obj[self.obj]["layout"]["size"][0]*1.25))
+        
+        self.seta = [
+            TXU.text_ui(text="<",
+            pos=[
+                    int(self.info_obj[self.obj]["layout"]["pos"][0] +(
+                        self.info_obj[self.obj]["layout"]["size"][0]*1.25)),
+                    
+                    self.info_obj[self.obj]["layout"]["pos"][1]
+                ],
+            font="8x16",
+            interact=False )
+            ]
+        
+        
+        renderer.render(self.seta)
+        
+    def atualizar_seta(self):
+        
+        item = self.info_obj[self.obj]
+        self.seta[0]["layout"]["pos"] = [
+            int(item["layout"]["pos"][0] + item["layout"]["size"][0] * 1.25),
+            item["layout"]["pos"][1],
+        ]
+    def atualizar_tela(self,inpt="RET"):
+        
+        display.draw_rect(0,0,320,240)
+        
+        if inpt == "OK":
+            #self.Stm.change_state(self.state_map[self.info_obj[self.obj]["action"]]())
+            #Dinamc_Init["Init_State"] = self.Stm.change_state(self.state_map[self.info_obj[self.obj]["action"]]())
+            Dinamc_Init["Init_State"] = self.Stm.change_state
+            Dinamc_Init["Init_State"](Dinamc_Init["ST_MAP"][self.info_obj[self.obj]["action"]]())
+        elif inpt == "RET":
+            #self.Stm.change_state(self.state_map[self.nav_map[-1]]())
+            #Dinamc_Init["Init_State"] = self.Stm.change_state(self.state_map[self.nav_map[-1]]())
+            Dinamc_Init["Init_State"] = self.Stm.change_state
+            Dinamc_Init["Init_State"](self.state_map[self.nav_map[-1]]())
+        self.info_obj = self.Stm.state.ui
+            
+        for elm in self.seta:
+            elm["layout"]["pos"][0] = 400
+            elm["layout"]["pos"][1] = 400
+        self.obj = 0
+        self.atualizar_seta()
+        renderer.render(self.seta)
+                
+    def move(self):
+        input_state = self.tc.read()
+        global Objeto
+        self.info_obj = self.Stm.state.ui
+        if type(self.Stm.state).__name__ not in ["Typing"]:
+            #print(Objeto)
+            
+            if (input_state == '2' and 
+                self.obj > (len(self.info_obj)*-1)):
+                try:
+                    if self.info_obj[self.obj-1]["interact"]:
+                        display.draw_rect(self.seta[0]["layout"]["pos"][0],self.seta[0]["layout"]["pos"][1])
+                        self.obj -= 1
+                        self.atualizar_seta()
+                        
+                except IndexError:
+                    pass
+                renderer.render(self.seta)
+                
+            elif (input_state == '8' and
+                  self.obj < (len(self.info_obj)-1)):
+                try:
+                    if self.info_obj[self.obj+1]["interact"]:
+                        display.draw_rect(self.seta[0]["layout"]["pos"][0],self.seta[0]["layout"]["pos"][1],16,16)
+                        self.obj += 1
+                        self.atualizar_seta()
+                except IndexError:
+                    pass
+                
+                renderer.render(self.seta)
+            
+            elif input_state == 'OK':
+                Objeto = self.info_obj[self.obj]
+                #Dinamc_Init = {
+                #               "Init_Event" : self.event_map[self.info_obj[self.obj]["action"]],
+                #               "Init_State" : self.Stm.change_state(self.state_map[self.info_obj[self.obj]["action"]])
+                #               }
+                
+                if self.info_obj[self.obj]["action"] in self.state_map:
+                    print(self.nav_map)
+                        
+                    self.atualizar_tela(inpt="OK")
+                        
+                elif self.info_obj[self.obj]["action"] in self.event_map:
+                    display.draw_rect(self.seta[0]["layout"]["pos"][0],
+                                      self.seta[0]["layout"]["pos"][1])
+                    
+                    #self.event_map[self.info_obj[self.obj]["action"]]()
+                    Dinamc_Init["Init_Event"] = self.event_map[self.info_obj[self.obj]["action"]]()
+                    
+                    #display.draw_rect(0,0,320,240)
+                    #self.Stm.draw()
+                    #self.info_obj = self.Stm.state.ui
+        
+                    for elm in self.seta:
+                        elm["layout"]["pos"][0] = 400
+                        elm["layout"]["pos"][1] = 400
+                    self.obj = 0
+                    self.atualizar_seta()
+                    renderer.render(self.seta)
+                
+                if str(self.Stm.last_state) not in self.nav_map and self.Stm.last_state not in ["Typing",]:
+                         self.nav_map.append(str(self.Stm.last_state))
+            
+        if input_state == "RET" and len(self.nav_map) > 0:
+            #print("Entrando Em",self.nav_map[-1])
+            print(self.nav_map)
+            self.atualizar_tela()
+            self.nav_map.pop(-1)
+            
+            #print(self.nav_map)
+            
+            for elm in self.seta:
+                    elm["layout"]["pos"][0] = 400
+                    elm["layout"]["pos"][1] = 400
+            self.obj = 0
+            self.atualizar_seta()
+            renderer.render(self.seta)
+            
+            
+        if self.info_obj[self.obj]["type"] == "text":
+            pass
+            #print(str(self.info_obj[self.obj]["text"]))
+        #for _ in self.info_obj:
+        #    if _["type"] == "text":
+        #        print(_["layout"]["size"])
+        #print(str(self.Stm.last_state))     Estado anterior
+        #print(str(self.info_obj[self.obj]["action"]))
+        #print(str(type(self.Stm.state).__name__)) Estado atual
+        #print(self.nav_map)    
